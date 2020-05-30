@@ -22,8 +22,8 @@
 
 // SETTINGS  /{{{
 	program_name = "ADAblock";
-	program_version = "v1.02"; prog_version = 1.02;
-	modification_date = "2017.08.17";
+	program_version = "v1.03"; prog_version = 1.03;
+	modification_date = "2020.05.28";
 	d_mode = 1; //(diagnostc mode)
 	requires("1.49o"); // Requires Latest Version of ImageJ
 	// http://fiji.sc/wiki/index.php/Auto_Threshold
@@ -1380,14 +1380,6 @@ function MinimaNotFoundRerunNecessary(sub_start,sub_end,g_entry,g_start,g_end){
 	if(g_entry==0 || g_entry==g_end-1){return false;} // no need to rerun; probably an end point
 	else if(g_entry-sub_start>0 && g_entry-sub_start<(sub_end-sub_start)-1){return false;} // no need to rerun; it's in the middle somewhere
 	else{return true;} // need to rerun
-}
-
-// Cross Product
-// When u = (x_edge-x_skel, y_edge-y_skel) & v = (1, slope)
-function nCrossProduv(ux,uy,vx,vy){
-	cross_product = ux*vy - vx*uy;
-	if(cross_product==0){sign_CP = 0;}else{sign_CP = cross_product/abs(cross_product);}
-	return sign_CP;
 }
 
 
@@ -4573,9 +4565,6 @@ Before skeletonization:
 		edge_to_skel_distance = newArray(xpoints.length);
 		edge_skel_avg_index = newArray(xpoints.length);
 		skel_f_distance = newArray(xpoints.length);
-		edge_array_cp = newArray(xpoints.length);		// Cross Product
-		edge_array_closer = newArray(xpoints.length);
-		edge_array_further = newArray(xpoints.length);
 	
 		// LOOP Over all EDGE Points //{{{
 		range = 7;
@@ -4700,11 +4689,10 @@ Before skeletonization:
 			else{xe = -1; ye = -1; vector = newArray(0,0,0,0,0,0);}
 			// Record Data Points
 			/** Could potentially do a second centre-to-tranverse-edge distance measurement **/
-			if(xe==-1){ edge_to_edge_distance[n] = -1; edge_to_skel_distance[n] = -1; edge_array_cp[n] = 0;}
+			if(xe==-1){ edge_to_edge_distance[n] = -1; edge_to_skel_distance[n] = -1;}
 			else{	edge_array_valid[n] = 1;
 				edge_to_edge_distance[n] = sqrt((xo-xe)*(xo-xe) + (yo-ye)*(yo-ye));
 				edge_to_skel_distance[n] = sqrt((xo-xc)*(xo-xc) + (yo-yc)*(yo-yc));
-				edge_array_cp[n] = nCrossProduv(xo-xc,yo-yc,1,f_slope);
 			}
 			skel_f_distance[n] = f*skel_distance[mm_pos] + (1-f)*skel_distance[mm_neg]; //print(f + " " + skel_distance[mm_neg] + " " + skel_distance[mm_pos]);
 			edge_skel_avg_index[n] = (mm_pos + mm_neg)/2;
@@ -4719,26 +4707,17 @@ Before skeletonization:
 		calc_time_i = getTime();
 		
 		// POSITIVE (CP), NEGATIVE (CP), & Just VALID
+		// I found that the physical meaning for categorization based on positive/negative cross product is vague
+		// plus, in this version, the classification is incomplete, so that the whole positive class is empty
+		// therefore, I will delete this whole categorization process and leave only the ones starting with `v' (which means valid=pos+neg)
 		// LWR : WIDTHS / EDGE-to-EDGE distances
-		p_edge_to_edge_distance = newArray(edge_points); p_eed = 0;
-		n_edge_to_edge_distance = newArray(edge_points); n_eed = 0;
 		v_edge_to_edge_distance = newArray(edge_points); v_eed = 0;
 		// LER : EDGE-to-CENTRE/SKELETON distances
-		p_edge_to_skel_distance = newArray(edge_points); p_esd = 0;
-		n_edge_to_skel_distance = newArray(edge_points); n_esd = 0;
 		v_edge_to_skel_distance = newArray(edge_points); v_esd = 0;
 		
 		for(m=0; m<edge_points; m++){
 			if(edge_array_valid[m]==1 && edge_to_edge_distance[m]>0 && edge_to_skel_distance[m]>0){
 				if(edge_to_edge_distance[m]<initial_limit*1.5 && edge_to_skel_distance[m]<initial_limit){ //points too far apart otherwise.
-					if(edge_array_further[m]>1){ // old: edge_array_cp[m]==1
-						p_edge_to_edge_distance[p_eed] = edge_to_edge_distance[m]; p_eed++; 
-						p_edge_to_skel_distance[p_esd] = edge_to_skel_distance[m]; p_esd++;
-					}
-					if(edge_array_further[m]<=1){ // old: edge_array_cp[m]==-1
-						n_edge_to_edge_distance[n_eed] = edge_to_edge_distance[m]; n_eed++; 
-						n_edge_to_skel_distance[n_esd] = edge_to_skel_distance[m]; n_esd++;
-					}
 					v_edge_to_edge_distance[v_eed] = edge_to_edge_distance[m]; v_eed++; 
 					v_edge_to_skel_distance[v_esd] = edge_to_skel_distance[m]; v_esd++;
 				}
@@ -4749,64 +4728,30 @@ Before skeletonization:
 			//print(edge_points + " " + p_eed + " " + n_eed + " " + v_eed);
 		
 		// Trim Arrays
-		p_edge_to_edge_distance = Array.trim(p_edge_to_edge_distance,p_eed);
-		n_edge_to_edge_distance = Array.trim(n_edge_to_edge_distance,n_eed);
 		v_edge_to_edge_distance = Array.trim(v_edge_to_edge_distance,v_eed);
-		p_edge_to_skel_distance = Array.trim(p_edge_to_skel_distance,p_eed);
-		n_edge_to_skel_distance = Array.trim(n_edge_to_skel_distance,n_eed);
 		v_edge_to_skel_distance = Array.trim(v_edge_to_skel_distance,v_eed);
 			//print(p_edge_to_edge_distance.length);
 			//if(np==128){Array.print(v_edge_to_edge_distance);}
 		// Get Statistics
-		Array.getStatistics(p_edge_to_skel_distance, p_esd_min, p_esd_max, p_esd_mean, p_esd_stdev); // P Edge
-		Array.getStatistics(n_edge_to_skel_distance, n_esd_min, n_esd_max, n_esd_mean, n_esd_stdev); // N Edge
 		Array.getStatistics(v_edge_to_skel_distance, v_esd_min, v_esd_max, v_esd_mean, v_esd_stdev); // V Edge
-		Array.getStatistics(p_edge_to_edge_distance, p_eed_min, p_eed_max, p_eed_mean, p_eed_stdev); // P Width
-		Array.getStatistics(n_edge_to_edge_distance, n_eed_min, n_eed_max, n_eed_mean, n_eed_stdev); // N Width
 		Array.getStatistics(v_edge_to_edge_distance, v_eed_min, v_eed_max, v_eed_mean, v_eed_stdev); // V Width
-		
+
 		calc_time_f = getTime();
 		// Set Results //{{{
-		setResult("P.E.sigma",np,p_esd_stdev); 
-		setResult("P.E.avg",np,p_esd_mean); 
-		setResult("P.E.count",np,p_esd); 
-		setResult("P.E.sum",np,p_esd*p_esd_mean);
-		setResult("P.E.min",np,p_esd_min);
-		setResult("P.E.max",np,p_esd_max);
-		setResult("P.W.sigma",np,p_eed_stdev); 
-		setResult("P.W.avg",np,p_eed_mean); 
-		setResult("P.W.count",np,p_eed); 
-		setResult("P.W.sum",np,p_eed*p_eed_mean);
-		setResult("P.W.min",np,p_eed_min);
-		setResult("P.W.max",np,p_eed_max);
+		setResult("EdgeToSkel.sigma",np,v_esd_stdev); 
+		setResult("EdgeToSkel.avg",np,v_esd_mean); 
+		setResult("EdgeToSkel.count",np,v_esd); 
+		setResult("EdgeToSkel.sum",np,v_esd*v_esd_mean);
+		setResult("EdgeToSkel.min",np,v_esd_min);
+		setResult("EdgeToSkel.max",np,v_esd_max);
+		setResult("EdgeToEdge.sigma",np,v_eed_stdev); 
+		setResult("EdgeToEdge.avg",np,v_eed_mean); 
+		setResult("EdgeToEdge.count",np,v_eed); 
+		setResult("EdgeToEdge.sum",np,v_eed*v_eed_mean);
+		setResult("EdgeToEdge.min",np,v_eed_min);
+		setResult("EdgeToEdge.max",np,v_eed_max);
 		
-		setResult("N.E.sigma",np,n_esd_stdev); 
-		setResult("N.E.avg",np,n_esd_mean); 
-		setResult("N.E.count",np,n_esd); 
-		setResult("N.E.sum",np,n_esd*n_esd_mean);
-		setResult("N.E.min",np,n_esd_min);
-		setResult("N.E.max",np,n_esd_max);
-		setResult("N.W.sigma",np,n_eed_stdev); 
-		setResult("N.W.avg",np,n_eed_mean); 
-		setResult("N.W.count",np,n_eed); 
-		setResult("N.W.sum",np,n_eed*n_eed_mean);
-		setResult("N.W.min",np,n_eed_min);
-		setResult("N.W.max",np,n_eed_max);
-		
-		setResult("V.E.sigma",np,v_esd_stdev); 
-		setResult("V.E.avg",np,v_esd_mean); 
-		setResult("V.E.count",np,v_esd); 
-		setResult("V.E.sum",np,v_esd*v_esd_mean);
-		setResult("V.E.min",np,v_esd_min);
-		setResult("V.E.max",np,v_esd_max);
-		setResult("V.W.sigma",np,v_eed_stdev); 
-		setResult("V.W.avg",np,v_eed_mean); 
-		setResult("V.W.count",np,v_eed); 
-		setResult("V.W.sum",np,v_eed*v_eed_mean);
-		setResult("V.W.min",np,v_eed_min);
-		setResult("V.W.max",np,v_eed_max);
-		
-		
+
 		setResult("t.skel",np,skel_time_f-skel_time_i);// figure out time-length correlation
 		setResult("t.select",np,select_time_f-select_time_i);// figure out time-length correlation
 		setResult("t.edge",np,edge_time_f-edge_time_i);// figure out time-length correlation
@@ -4819,45 +4764,56 @@ Before skeletonization:
 	
 	// CALCULATE AVERAGES //{{{
 	// Averages are weighted by length
-	P_length_total = 0; Psigma_length_total = 0;
-	N_length_total = 0; Nsigma_length_total = 0;
 	sigma_length_total = 0; length_total = 0;
-	n_avg_length = 0; p_avg_length = 0; /** Define as zero... avoid problems: **/
+	avg_length = 0;
 	for(n=0; n<nResults; n++){
-		Psigma = getResult("P.E.sigma",n);
+		sigma = getResult("EdgeToSkel.sigma",n);
+		sigma2 = getResult("EdgeToEdge.sigma",n);
 		length = getResult("Skel.Dist",n);
-		p_avg = getResult("P.E.avg",n); n_avg = getResult("N.E.avg",n);
-		if( isNaN(Psigma) != 1 && Psigma > 0.1){  //Ensure that error values are not included
-			Psigma_length_total += Psigma*length;
-			P_length_total += length;
+		avg = getResult("EdgeToSkel.avg",n);
+		avg2 = getResult("EdgeToEdge.avg",n);
+		if( isNaN(sigma) != 1 && sigma > 0.1){  //Ensure that error values are not included
+			sigma_length_total += sigma*length;
+			sigma2_length_total += sigma2*length;
+			length_total += length;
 		}
-		Nsigma = getResult("N.E.sigma",n);
-		if( isNaN(Nsigma) != 1 && Nsigma > 0.1){  //Ensure that error values are not included
-			Nsigma_length_total += Nsigma*length;
-			N_length_total += length;
-		}
-		n_avg_length = n_avg*length; p_avg_length = p_avg*length; length_total += length;
+		avg_length += avg*length;avg2_length += avg2*length;
 	}
-	Psigma_avg = Psigma_length_total / P_length_total; Nsigma_avg = Nsigma_length_total / N_length_total;
-	print(Psigma_avg);
+	sigma_avg = sigma_length_total / length_total;
+	sigma2_avg = sigma2_length_total / length_total;
 	
-	outputTD("P.LER_sigma_avg",Psigma_avg);
-	outputTD("N.LER_sigma_avg",Nsigma_avg);
-	outputTD("LER_length_total_px",length_total);
-	n_avg = n_avg_length / length_total; p_avg = p_avg_length / length_total; 
-	outputTD("LER_N_width_avg",n_avg);
-	outputTD("LER_P_width_avg",p_avg);
-	outputTD("LER_width_avg",n_avg+p_avg);
+	outputTD("LER_sigma_avg_px",sigma_avg);
+	outputTD("LER_sigma_avg_nm",sigma_avg*nm_per_pixel);
+	outputTD("LWR_sigma_avg_px",sigma2_avg);
+	outputTD("LWR_sigma_avg_nm",sigma2_avg*nm_per_pixel);
+	outputTD("Total_skeleton_length_px",length_total);
+	outputTD("Total_skeleton_length_nm",length_total*nm_per_pixel);
+	avg = avg_length / length_total;
+	avg2 = avg2_length / length_total;
+	outputTD("EdgeToSkel_width_avg_px",avg);
+	outputTD("EdgeToSkel_width_avg_nm",avg*nm_per_pixel);
+	outputTD("EdgeToEdge_width_avg_px",avg2);
+	outputTD("EdgeToEdge_width_avg_nm",avg2*nm_per_pixel);
 	
-	PNV_array = newArray("P","N","V");
-	EW_array = newArray("E","W");
+	print("LER_sigma_avg_px" +": "+sigma_avg);
+	print("LER_sigma_avg_nm" +": "+sigma_avg*nm_per_pixel);
+	print("LWR_sigma_avg_px" +": "+sigma2_avg);
+	print("LWR_sigma_avg_nm" +": "+sigma2_avg*nm_per_pixel);
+	print("Total_skeleton_length_px" +": "+length_total);
+	print("Total_skeleton_length_nm" +": "+length_total*nm_per_pixel);
+	print("EdgeToSkel_width_avg_px" +": "+avg);
+	print("EdgeToSkel_width_avg_nm" +": "+avg*nm_per_pixel);
+	print("EdgeToEdge_width_avg_px" +": "+avg2);
+	print("EdgeToEdge_width_avg_nm" +": "+avg2*nm_per_pixel);
+
+
+	EW_array = newArray("EdgeToSkel","EdgeToEdge");
 	sacsmm_array = newArray("sigma","avg","count","sum","min","max");
 	
-	for(pnv=0; pnv<PNV_array.length; pnv++){
 		for(ew=0; ew<EW_array.length; ew++){
 			for(sac=0; sac<sacsmm_array.length; sac++){
 				items = newArray(nResults);
-				column_label = PNV_array[pnv] + "." + EW_array[ew] + "." + sacsmm_array[sac];
+				column_label = EW_array[ew] + "." + sacsmm_array[sac];
 				for(it=0; it<nResults; it++){
 					items[it] = getResult(column_label,it);
 				}
@@ -4874,7 +4830,6 @@ Before skeletonization:
 				print(column_label+".count" + ": " + count);
 			}
 		}
-	}
 	
 	items = newArray(nResults);
 	column_label = "Skel.Dist";
