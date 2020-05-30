@@ -33,7 +33,7 @@
 // Default options
 default_options_single_multi = "Multi";
 default_batchmode_choice = true;
-default_options_resolution = "Specified";
+default_options_resolution = "Zeiss (Experimental)";
 default_value_resolution = 2; // nm per pixel;
 default_options_resolution_units = "nm";
 default_domain_mapping = -1; // true/false, or -1 meaning automatic (true unless batch mode on)
@@ -1742,7 +1742,7 @@ function selectionCombo(xPoints,yPoints,angle,degrees_true,scale_factor,x_offset
 		//!@#$%
 
 	// Question: Resolution //{{{
-  		options_resolution = newArray("NINT_s4800","Embedded","Specified");
+  		options_resolution = newArray("NINT_s4800", "Zeiss (Experimental)", "Embedded","Specified");
   		options_resolution_units = newArray("nm",getInfo("micrometer.abbreviation"));
   		Dialog.create("Determine Image Resolution");
 			Dialog.addMessage("How will the image resolution be determined? \nIf 'Specified' is selected, enter a value and \nchoose a unit.");
@@ -1843,7 +1843,7 @@ function selectionCombo(xPoints,yPoints,angle,degrees_true,scale_factor,x_offset
 		cropping_unit_opt = newArray("Percent","Pixels");
 		cropping_uniform_opt = newArray("Uniform","Non-Uniform");
 		Dialog.create("Crop Options");
-			Dialog.addMessage(crop_message + "Automatic cropping of images.\nNote: for NINT images,\ncrop is automatic.\n.");
+			Dialog.addMessage(crop_message + "Automatic cropping of images.\nNote: for NINT/Zeiss images,\ncrop is automatic.\n.");
 			Dialog.addChoice("Crop:",cropping_options);
 			Dialog.addChoice("When:",cropping_step_opt); 
 			Dialog.addMessage("Percent interpreted as % value.\nPixels interpreted as px value.\n.");
@@ -2135,9 +2135,92 @@ for(img_i=0; img_i<image_list.length; img_i++){
 		w = getWidth(); if(w == 1280){ M = 1; } else if(w == 1280*2){ M = 2; } else { M = 0; }
 		makeRectangle(0, 0, 1280*M, 896*M);
 		run("Crop"); run("Select None"); //}}}
+	} else {
+		run("Properties...", "channels=1 slices=1 frames=1 unit=pixel pixel_width=1 pixel_height=1 voxel_depth=1.0000000 frame=[0 sec] origin=0,0");
+		character_array = newArray("0","1","2","3","6","7","8",".","n","u","m");
+		w = getWidth();
+		h = getHeight();
+		if(w==1024 && h==768){
+			// will recognize characters based on their pixel area
+			// however, 0/5 share the same area, and so do 2/4 and 6/9
+			// therefore, other shape factors should also be utilized to tell them apart
+			character_area_array = newArray(64,34,56,59,70,40,77,4,47,58,73);
+		} else {
+			exit("unknown image size");
+		}
+		y_fringe = 710; found_fringe = false;
+		while (!found_fringe && y_fringe > 680) {
+			if (getPixel(15,y_fringe) < 5) {found_fringe=true;}
+			else if (getPixel(15,y_fringe) > 250) {y_fringe--;}
+			else {y_fringe=680;}//break
+		}
+		if (!found_fringe){
+			showMessageWithCancel("Something might be wrong here: Scale bar detection\nClick cancel to exit or OK to continue anyway");
+			y_fringe=690;
+		}
+		makeRectangle(15, y_fringe+1, 185, 65);
+		run("Duplicate...", "title=scalebar_text");
+		setAutoThreshold("Default dark");setOption("BlackBackground", true);run("Convert to Mask");
+		run("Invert LUT"); scalebar = getImageID();
+		run("Set Measurements...", "area mean bounding shape redirect=None decimal=3");
+		run("Analyze Particles...", "size=0-Infinity circularity=0.00-1.00 show=Nothing display clear record");
+		selectImage(scalebar); close(); run("Select None");
+
+		character_x_starts = newArray(nResults-1);
+		scalebar_number_string = "";
+		scalebar_unit_string = "";
+		
+		for(x=0; x<nResults-1; x++){
+				character_x_starts[x] = getResult("XStart",x);
+		}
+		character_x_sequence = Array.rankPositions(character_x_starts);
+		for(x=0; x<nResults-1; x++){
+			n = character_x_sequence[x];
+			character_particle_area = getResult("Area",n);
+
+			m = 0;
+			character = "";
+			while(m<character_area_array.length){
+				if(character_particle_area == character_area_array[m]){
+					character = character_array[m];
+					if (m>7) {
+						scalebar_unit_string = scalebar_unit_string + character;
+					} else {
+						if (m==0) {
+							if (getResult("AR",n)>1.6) { character="5"; }
+						} else if (m==2) {
+							if (getResult("AR",n)<1.5) { character="4"; }
+						} else if (m==6) {
+							if (getResult("AR",n)>1.48) { character="9"; }
+						}
+						scalebar_number_string = scalebar_number_string + character;
+					}
+					m = character_area_array.length; // break
+				}
+				m++;
+			}
+			if (character=="") { showMessageWithCancel("Something might be wrong here: Character Recognition\nClick cancel to exit or OK to continue anyway"); }
+		}
+		print(scalebar_number_string + " " + scalebar_unit_string);
+		scalebar_number_int = parseInt(scalebar_number_string);  
+
+		if(scalebar_unit_string == "um"){
+			scalebar_length_nm = scalebar_number_int * 1000;
+		} else if(scalebar_unit_string == "mm"){
+			scalebar_length_nm = scalebar_number_int * 1000000;
+		} else if(scalebar_unit_string == "nm"){
+			scalebar_length_nm = scalebar_number_int;
+		}
+		
+		scalebar_length_pix = getResult("Width",nResults-1);
+		pix_per_nm = scalebar_length_pix / scalebar_length_nm;
+		nm_per_pixel = scalebar_length_nm / scalebar_length_pix;
+		print(pix_per_nm + " px/nm \n" + nm_per_pixel + " nm/px");
+		run("Clear Results"); selectWindow("Results"); run("Close"); 
+
+		makeRectangle(0, 0, 1024, y_fringe);
+		run("Crop"); run("Select None");
 	}
-	else exit("Something's wrong here");
-	
 	period_range_min_px = period_range_min_nm / nm_per_pixel; // For FFT period auto-detection
 	period_range_max_px = period_range_max_nm / nm_per_pixel; // For FFT period auto-detection
 	
