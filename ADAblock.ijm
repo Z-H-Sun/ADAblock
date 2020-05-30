@@ -49,12 +49,17 @@ binary_grooming = true; // Include a binary grooming step to reduce extra defect
 // Exit if necessary plugins are not installed.
 
 // "Auto Local Threshold" Plugin
+// For higher versions, the name becomes AutoLocalThreshold... (with ellipsis) instead
+// So I added one more "if" here
 List.setCommands; 
-if (List.get("Auto Local Threshold")!="") { 
-	// plugin is installed 
+auto_loc_th_name = "";
+if (List.get("Auto Local Threshold")!="") {
+	auto_loc_th_name="Auto Local Threshold";
+} else if (List.get("Auto Local Threshold...")!="") {
+	auto_loc_th_name="Auto Local Threshold...";
 } else {
 	print("Install: AUTO LOCAL THRESHOLD");
-	print("URL: http://bit.ly/plugin_ALT");
+	print("URL: http://fiji.sc/Auto_Local_Threshold");
 	exit("AUTO LOCAL THRESHOLD\nnot installed.");
 }
 
@@ -2108,8 +2113,10 @@ for(img_i=0; img_i<image_list.length; img_i++){
 	
 	// IMAGE VIABILITY  //{{{
 		viable_image = true; 
-		if(bitDepth() != 8){viable_image = false;}
- else { run("8-bit"); } // Fix to turn "8-bit Color" images to plain "8-bit"
+		//if(bitDepth() != 8){viable_image = false;}
+		//There is no need to limit to 8-bit images
+		//The `8-bit` macro will do the conversion anyway
+		run("8-bit"); // Fix to turn "8-bit Color" images to plain "8-bit"
 		//else if(true){viable_image = false;}  // Other reasons...
 	// END OF IMAGE VIABILITY  //}}}
 	
@@ -2578,7 +2585,7 @@ for(img_i=0; img_i<image_list.length; img_i++){
 		}
 		else if(thresholding_choice=="Auto-Local"){
 		if(auto_local_relative){auto_local_radius = 1.5 * wfft_period_pixel;}
-		run("Auto Local Threshold", "method="+auto_local_choice+" radius="+auto_local_radius+" parameter_1="+auto_local_p1+" parameter_2="+auto_local_p1+" white");
+		run(auto_loc_th_name, "method="+auto_local_choice+" radius="+auto_local_radius+" parameter_1="+auto_local_p1+" parameter_2="+auto_local_p1+" white");
 		outputTD("Threshold",3);
 		outputTD("Threshold.Auto-Local.String",auto_local_choice);
 		}
