@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*- 
 
 """
@@ -12,15 +12,12 @@ The directory locations will need to be modified, depending on the location of t
 #Directory = '/home/jeffrey/ownCloud/Algorithm Output/Paper Image Set/all2-output/Output_20140514_111653'
 #SaveFile = Directory[Directory.rindex("/"):]
 
-#Save_Directory = "D:\SEM Data\20150131\Output_20150131_103030"
-Save_Directory = "/home/jeffrey/Data/Image Analysis"
+Save_Directory = r"C:\Users\Szh\sgLine_original"
 
 windows = "\\"
 linux = "//"
 from os.path import sep
-winlinux = os.path.sep
-
-List_of_Directories = [Save_Directory]
+winlinux = sep
 
 List_of_Directories = []
 
@@ -28,7 +25,7 @@ from os import listdir
 from os.path import isfile
 d = listdir(Save_Directory)
 for i in range(0,len(d)):
-    if not isfile(d[i]):
+    if not isfile(Save_Directory + winlinux + d[i]):
         List_of_Directories.append(d[i])
 
 print(List_of_Directories)
@@ -77,7 +74,7 @@ for Directory in List_of_Directories:
         file_list = os.listdir(Directory + winlinux + d)
         if "outputTD_vertical.xls" in file_list:
             print("found")
-            rfile = open(Directory + winlinux + d + winlinux + "outputTD_vertical.xls","rb")
+            rfile = open(Directory + winlinux + d + winlinux + "outputTD_vertical.xls","r")
             reader = csv.reader(rfile)
 
             temporary_data = []
@@ -105,8 +102,8 @@ for Directory in List_of_Directories:
     #print(dataset)
 
 
-ofile  = open(Save_Directory + winlinux + "Summary_2.csv", "wb")
-writer = csv.writer(ofile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
+ofile  = open(Save_Directory + winlinux + "Summary_2.csv", "w")
+writer = csv.writer(ofile, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONNUMERIC)
 
 # Labels
 spreadsheet_labels = ["File"] + labels
