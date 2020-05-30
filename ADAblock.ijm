@@ -289,37 +289,14 @@ function followErase(x,y,value) {
 // 011 Set Foreground Index //{{{
 // Sets the Foreground Colour using an Index
 // Value corresponds to Color when using FloodFill
-function setForegroundIndex(value) {
-	getLut(reds,greens,blues);
-	setForegroundColor(reds[value],greens[value],blues[value]);
-} //}}}
-
-// 012 LUT Functions //{{{
-
-// LUTS One
-function LUTs_001(true_or_false){
-	if(true_or_false){
-		reds = newArray(256); greens = newArray(256); blues = newArray(256);
-		for(n=0; n<256; n++){ reds[n] = 255-n; greens[n] = 255-n; blues[n] = 255-n;}
-		// Array.fill(reds, 0); Array.fill(greens, 0); Array.fill(blues, 0)
-		value = 1; reds[value] = 255; greens[value] = 200; blues[value] = 200;
-		value = 2; reds[value] = 120; greens[value] = 255; blues[value] = 120;
-		value = 254; reds[value] = 0; greens[value] = 0; blues[value] = 170;
-		value = 253; reds[value] = 0; greens[value] = 165; blues[value] = 120;
-		setLut(reds, greens, blues);
-	}
-}
-
-
-// LUT Index Modification 
-function LUT_index_mod(index,r,g,b){
-	getLut(reds, greens, blues);
-	reds[index] = r; greens[index] = g; blues[index] = b;
-	setLut(reds, greens, blues);
-}
-
-
-//}}}
+//For ImageJ core version>1.52, calling `setForegroundColor` after `setColor` does not take effect
+//which will cause floodFilling with the color previously set by `setColor` rather than that set by `setForegroundColor` and cause bugs
+//One solution is to call `setForegroundColor` twice which will then override `setColor`
+//But here I decided to replace every `setForegroundIndex` in this file with `setColor` instead, and this will also do the job correctly
+//function setForegroundIndex(value) {
+//	getLut(reds,greens,blues);
+//	setForegroundColor(reds[value],greens[value],blues[value]);
+//} //}}}
 
 // 013 Weighted Least Squares Algorithm //{{{
 // For estimation of line widths
@@ -539,14 +516,14 @@ function edgePixelCount(colour_object,zero_x,zero_y,w,h){
 		Lx = getResult("Width",n); Ly = getResult("Height",n);
 		if(bx==0 || by==0 || bx+Lx==w || by+Ly==h){
 			setResult("OnEdge",n,1);
-			setForegroundIndex(colour_object);
+			setColor(colour_object);
 			floodFill(xo,yo);
 			result = edgeWalkPixels(colour_object,zero_x,zero_y,w,h);
 			setResult("EdgeTouch",n,result[0]);
 			setResult("EdgePixels",n,result[1]);
 			setResult("Sides",n,result[2]);
 			//if(n<nPositive){setForegroundIndex(255);}else{setForegroundIndex(0);}
-			setForegroundIndex(xy_value); // Replacement line
+			setColor(xy_value); // Replacement line
 			floodFill(xo,yo);
 		}
 		else{ setResult("OnEdge",n,0); }
@@ -558,48 +535,6 @@ function edgePixelCount(colour_object,zero_x,zero_y,w,h){
 // Discover whether objects are enclosed inside of another. Enclosure indicates exterior lines or a defect
 // contains particles: "Contains" = 1
 // enclosed by particles: "Enclosed"
-
-function checkInside(nPositive,nTotal,cvalue){
-	if(isNaN(getResult("Contains",0))){for(n=0; n<nTotal;n++){setResult("Contains",n,0);}}
-	if(isNaN(getResult("Enclosed",0))){for(n=0; n<nTotal;n++){setResult("Enclosed",n,0);}}
-	if(isNaN(getResult("Enclosed.By",0))){for(n=0; n<nTotal;n++){setResult("Enclosed.By",n,-1);}}
-	
-	for(i=0; i<2; i++){
-		if(i==0){start_A = 0; end_B = nPositive; start_C = nPositive; end_D = nTotal;}
-		else{start_A = nPositive; end_B = nTotal; start_C = 0; end_D = nPositive;}
-		for(n=start_A; n<end_B; n++){
-			m_inside_check = newArray(0);
-			for(m=start_C; m<end_D; m++){
-				nBx = getResult("BX",n); nBy = getResult("BY",n);
-				nLx = getResult("Width",n); nLy = getResult("Height",n);
-				mBx = getResult("BX",m); mBy = getResult("BY",m);
-				mLx = getResult("Width",m); mLy = getResult("Height",m);
-				// if "m" entry is inside of "n" entry
-				if(mBx>nBx && mBy>nBy && (mBx+mLx)<(nBx+nLx) && (mBy+mLy)<(nBy+nLy)){
-					// Checks to see if neighbouring values changed after flood fill. Indicates enclosure.
-					// Enclosed ones, via ">" (not ">=" definition have first pixel inside regardless.
-					m_inside_check = Array.concat(m_inside_check,m);
-				}
-				//else{if(getResult("Lines",n)!=1){setResult("Lines",n,0);}}
-			}
-			// Flood Fill part is moved outside for speed...
-			if(m_inside_check.length>0){
-				nx = getResult("XStart",n); ny = getResult("YStart",n); nxy_value = getPixel(nx,ny);
-				setForegroundIndex(cvalue); floodFill(nx,ny,"8-connected");
-				for(m=0; m<m_inside_check.length; m++){
-					mx = getResult("XStart",m_inside_check[m]); my = getResult("YStart",m_inside_check[m]);
-					mn_connection = neighbourValueExact(mx,my,cvalue);
-					if(mn_connection>0){
-						count = getResult("Contains",n); setResult("Contains",n,count+1);
-						setResult("Enclosed",m_inside_check[m],1); setResult("Enclosed.By",m_inside_check[m],n);
-					}
-				}
-				setForegroundIndex(nxy_value); floodFill(nx,ny,"8-connected"); // return to original value
-			}
-		}
-	}
-	updateResults(); return 1;
-} 
 
 function checkInsideEDGE(nPositive,nTotal,cvalue,w,h){
 	if(isNaN(getResult("Contains",0))){for(n=0; n<nTotal;n++){setResult("Contains",n,0);}}
@@ -627,7 +562,7 @@ function checkInsideEDGE(nPositive,nTotal,cvalue,w,h){
 			// Flood Fill part is moved outside for speed...
 			if(m_inside_check.length>0){
 				nx = getResult("XStart",n); ny = getResult("YStart",n); nxy_value = getPixel(nx,ny);
-				setForegroundIndex(cvalue); floodFill(nx,ny,"8-connected");
+				setColor(cvalue); floodFill(nx,ny,"8-connected");
 				if( (nx==0 || nx==w-1) || (ny==0 || ny==h-1) ){ nxny = furthestNonEdgePixel(nx,ny,w,h,cvalue); nx = nxny[0]; ny = nxny[1];}
 				for(m=0; m<m_inside_check.length; m++){
 					mx = getResult("XStart",m_inside_check[m]); my = getResult("YStart",m_inside_check[m]);
@@ -637,7 +572,7 @@ function checkInsideEDGE(nPositive,nTotal,cvalue,w,h){
 						setResult("Enclosed",m_inside_check[m],1); setResult("Enclosed.By",m_inside_check[m],n);
 					}
 				}
-				setForegroundIndex(nxy_value); floodFill(nx,ny,"8-connected"); // return to original value
+				setColor(nxy_value); floodFill(nx,ny,"8-connected"); // return to original value
 			}
 		}
 	}
@@ -745,25 +680,8 @@ if(example){
 //cP = colourParticles("Phase","==",1,100,0,nResults);
 //cP = colourParticlesPhase(1,"Area","<",100,100,0,nResults);
 
-function colourParticles(column,condition,value,index,n_start,n_end){
-	count = 0; setForegroundIndex(index);
-	for(n=n_start; n<n_end; n++){
-		col_value = getResult(column,n);
-		macro_expression = "result="+col_value+condition+value+"; return toString(result);";
-		if(eval(macro_expression)){
-			x = getResult("XStart",n);
-			y = getResult("YStart",n);
-			floodFill(x,y,"8-connected");
-			count++;
-		}	
-	}
-	return count;
-}
-
-
-
 function colourParticlesPhase(phase,column,condition,value,index,n_start,n_end){
-	count = 0; setForegroundIndex(index);
+	count = 0; setColor(index);
 	for(n=n_start; n<n_end; n++){
 		if(getResult("Phase",n)==phase){
 			col_value = getResult(column,n);
@@ -780,7 +698,7 @@ function colourParticlesPhase(phase,column,condition,value,index,n_start,n_end){
 } 
 /* INCOMPLETE
 function colourByParameter(column,value,index,n_start,n_end){
-	count = 0; setForegroundIndex(index);
+	count = 0; setColor(index);
 	for(n=n_start; n<n_end; n++){
 		col_value = getResult(column,n);
 		macro_expression = "result="+col_value+condition+value+"; return toString(result);";
@@ -1657,78 +1575,6 @@ function arraySmoothFilter(histogram,iterations,plusminus) {
 }
 
 // 029 //}}}
-
-// 030 Object Histogram Stuff //{{{
-
-var xObject = newArray(0);
-var yObject = newArray(0);
-
-var eightx = newArray(0,1,1,1,0,-1,-1,-1);
-var eighty = newArray(1,1,0,-1,-1,-1,0,1);
-
-function objectPixels(xstart,ystart,tempvalue){
-	/** Try using index instead of concat **/
-	w = getWidth(); h = getHeight();
-	xObject = newArray(w*h); // clear to ensure empty
-	yObject = newArray(w*h); // clear to ensure empty
-	xObject[0] = xstart; 
-	yObject[0] = ystart;
-	value = getPixel(xstart,ystart);
-	setForegroundIndex(tempvalue);
-	floodFill(xstart,ystart,"8-connected");
-	setPixel(xstart,ystart,value);
-	//xtemp = newArray(8);
-	//ytemp = newArray(8);
-	inOperation = true; index = 0; appendindex = 1;
-	while(inOperation){
-		x = xObject[index]; y = yObject[index];
-		//count = 0;
-		for(i=0; i<8; i++){
-			if(getPixel(x+eightx[i],y+eighty[i])==tempvalue){
-				xObject[appendindex] = x+eightx[i];
-				yObject[appendindex] = y+eighty[i];
-				appendindex++;
-				setPixel(x+eightx[i],y+eighty[i],value);
-			}
-		}
-		if(index<appendindex-1){index++;}else{inOperation = false;}
-	}
-	print(xObject.length);
-	xObject = Array.trim(xObject,appendindex);
-	yObject = Array.trim(yObject,appendindex);
-	return xObject.length;
-}
-
-function objectHistogram(xstart,ystart,tempvalue,binary_image,original_image){
-	original = getImageID();
-	selectImage(binary_image);
-	count = objectPixels(xstart,ystart,tempvalue);
-	values_array = newArray(count);
-	histogram_array = newArray(256);
-	selectImage(original_image);
-	for(i=0; i<count; i++){
-		values_array[i] = getPixel(xObject[i],yObject[i]);
-	}
-	for(i=0; i<count; i++){
-		histogram_array[values_array[i]] += 1;
-	}
-	selectImage(original);
-	return histogram_array;
-}
-
-function histogramRangeCount(first,last,histogram){
-	count = 0;
-	sum = 0;
-	for(i=0;i<256;i++){
-		if(i>=first && i<=last){ count += histogram[i]; }
-		sum += histogram[i];
-	}
-	proportion = count / sum;
-	results = newArray(proportion,count,sum);
-	return results;
-}
-
-//}}}
 
 // 031 OPA Specific: Components & followTwoEncodeVS (variant) //{{{
 
@@ -2768,7 +2614,7 @@ for(img_i=0; img_i<image_list.length; img_i++){
 			for(i=0; i<2; i++){
 				run("Invert");
 				run("Analyze Particles...", "size=0-Infinity circularity=0.00-1.00 show=Nothing display clear record");
-				setForegroundIndex(255);
+				setColor(255);
 				for(n=0;n<nResults;n++){
 					if(getResult("Area",n)<small_area_limit){
 						floodFill(getResult("XStart",n),getResult("YStart",n),"8-connected");
@@ -2880,7 +2726,7 @@ for(img_i=0; img_i<image_list.length; img_i++){
 		if(cyc==0){
 			selectImage(image_binary); //run("Duplicate...", "title=swapped"); image_swapped = getImageID();
 			diff_threshold = minOf((pos_mean-neg_mean)/1.4,1.4*(pos_std+neg_std)); print("Diff_Threshold: " + diff_threshold); //!@#$
-			setForegroundIndex(100);
+			setColor(100);
 			containing_table_entry = newArray(0);
 			containing_table_entry_count = newArray(0);
 			for(n=0; n<nResults; n++){
@@ -2891,7 +2737,7 @@ for(img_i=0; img_i<image_list.length; img_i++){
 					if(diff<diff_threshold){
 						x = getResult("XStart",n); y = getResult("YStart",n);
 						value = getPixel(x,y);
-						setForegroundIndex(255-255*getResult("Phase",n)); floodFill(x,y,"8-connected");
+						setColor(255-255*getResult("Phase",n)); floodFill(x,y,"8-connected");
 						setResult("Swap",n,1); //phase = getResult("Phase",n); setResult("Phase",n,1-phase);
 					}
 		
@@ -2988,7 +2834,7 @@ for(img_i=0; img_i<image_list.length; img_i++){
 		}}
 		changeValues(100,100,255);
 		outputTD("PA.Blobs.p.i.count",pB_area.length); outputTD("PA.Blobs.p.i.area",area_sum);
-		setForegroundIndex(0); Blobs_erased = 0; 
+		setColor(0); Blobs_erased = 0; 
 		for(i=0; i<pB_area.length; i++){ if(pB_area[i]< pB_area_min){floodFill(pB_x[i],pB_y[i],"8-connected"); Blobs_erased++; area_sum -= pB_area[i];}}
 		pos_blob_count = pB_area.length-Blobs_erased;  outputTD("PA.Blobs.p.f.area",area_sum);
 		outputTD("PA.Blobs.p.f.count",pos_blob_count); imagesaver(savestages,image_blobs_pos,save_subfolder,"image_blobs_pos_f","png");
@@ -3012,7 +2858,7 @@ for(img_i=0; img_i<image_list.length; img_i++){
 		}}
 		changeValues(100,100,255);
 		outputTD("PA.Blobs.n.i.count",nB_area.length); outputTD("PA.Blobs.n.i.area",area_sum);
-		setForegroundIndex(0); Blobs_erased = 0; 
+		setColor(0); Blobs_erased = 0; 
 		for(i=0; i<nB_area.length; i++){ if(nB_area[i]< nB_area_min){floodFill(nB_x[i],nB_y[i],"8-connected"); Blobs_erased++; area_sum -= nB_area[i];}}
 		neg_blob_count = nB_area.length-Blobs_erased;  outputTD("PA.Blobs.n.f.area",area_sum);
 		outputTD("PA.Blobs.n.f.count",neg_blob_count); imagesaver(savestages,image_blobs_neg,save_subfolder,"image_blobs_pos_f","png");
@@ -3026,7 +2872,7 @@ for(img_i=0; img_i<image_list.length; img_i++){
 		neg_edge_dot_count = 0; neg_dot_count = 0;
 		selectImage(image_binary); run("Duplicate...", "title=dots_pos"); image_dots_pos = getImageID();
 		selectImage(image_binary); run("Duplicate...", "title=dots_neg"); image_dots_neg = getImageID(); run("Invert");
-		setForegroundIndex(0);
+		setColor(0);
 		for(n=0; n<nResults; n++){
 			if(getResult("Phase",n)==1){
 				if(getResult("Area",n) <= dot_max_area_pos){
@@ -3087,7 +2933,7 @@ for(img_i=0; img_i<image_list.length; img_i++){
 		neg_edge_line_count = 0; neg_line_count = 0;
 		selectImage(image_binary); run("Duplicate...", "title=lines_pos"); image_lines_pos = getImageID();
 		selectImage(image_binary); run("Duplicate...", "title=lines_neg"); image_lines_neg = getImageID(); run("Invert");
-		setForegroundIndex(0);
+		setColor(0);
 		for(n=0; n<nResults; n++){
 			if(getResult("Phase",n)==1){
 				if(getResult("Area",n) > line_min_area_pos){
@@ -3872,7 +3718,7 @@ Before skeletonization:
 	run("Select None");
 	
 	// this gets rid of all lines that are connected to junctions only
-	setForegroundIndex(opa_regular_J);
+	setColor(opa_regular_J);
 	opa_jterminal_array_single = newArray(0);
 	for(y=0; y<h; y++){
 		for(x=0; x<w; x++){
@@ -3888,7 +3734,7 @@ Before skeletonization:
 	}
 	
 	
-	setForegroundIndex(opa_regular_L);
+	setColor(opa_regular_L);
 	opa_loop_array = newArray(0);
 	for(y=0; y<h; y++){
 		for(x=0; x<w; x++){
@@ -4470,7 +4316,7 @@ Before skeletonization:
 	// Break Lines
 	w = getWidth(); h = getHeight();
 	selectImage(image_positive_skeleton);
-	setForegroundIndex(250);
+	setColor(250);
 	break_j_x = newArray(0);
 	break_j_y = newArray(0);
 	for(y=0; y<h; y++){
@@ -4486,7 +4332,7 @@ Before skeletonization:
 		}
 	}
 	// REMOVE LOOPS v05 fix
-	loop_count = 0; setForegroundIndex(240);
+	loop_count = 0; setColor(240);
 	for(y=0; y<h; y++){
 		for(x=0; x<w; x++){
 			if(getPixel(x,y)==255){
