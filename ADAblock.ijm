@@ -1808,8 +1808,17 @@ function selectionCombo(xPoints,yPoints,angle,degrees_true,scale_factor,x_offset
 		Dialog.create("Choose Additional Analyses");
 			Dialog.addMessage("Choose whether the program will \nperform any addtional analyses.\nNote that this will increase run time.");
 			Dialog.addCheckbox("Orientational Domain Map", true);
+			Dialog.addCheckbox("Defect features (simple style)", true);
+			Dialog.addCheckbox("Defect features (with legend)", true);
+			Dialog.addCheckbox("Defect features (separated)", true);
+			Dialog.addCheckbox("Defect features (check unusual)", true);
+			
 			Dialog.show();
-		domain_mapping = Dialog.getCheckbox();
+			domain_mapping = Dialog.getCheckbox();
+			regions_defects = Dialog.getCheckbox();
+			regions_defects_new = Dialog.getCheckbox();
+			figure_4 = Dialog.getCheckbox();
+			unusual_defects = Dialog.getCheckbox();
 	//}}}
 	
 	// Question: Cropping //{{{
@@ -4883,12 +4892,8 @@ Before skeletonization:
 	
 	// CREATING COMPOSITES //{{{
 	jn_radius = 0.5*minOf(positive_width,negative_width); edge_limit = maxOf(positive_width,negative_width); outputTD("DRAW_edge_limit",edge_limit); outputTD("DRAW_jn_radius",jn_radius);
-	unusual_defects = true;
 	regions_blocky = false;
 	regions_fuzzy = false;
-	regions_defects = true;
-	regions_defects_new = true;
-	figure_4 = true;
 	
 	// Defects + Regions //{{{
 	if(regions_defects){
@@ -4922,7 +4927,7 @@ Before skeletonization:
 		run("Duplicate...", "title=cyan");
 		run("Multiply...", "value=0.5");
 		run("Merge Channels...", "c1=red c2=yellow c3=blue c4=grey c5=cyan c6=magenta create");
-		rename("regions_defects");
+		selectImage("Composite");rename("regions_defects"); //select "Composite" image. if not doing so, the lower versions of ImageJ will mistakenly select another image
 		image_regions_defects = getImageID();
 		selectImage(image_regions_defects); saveAs("TIF",save_subfolder+"image_regions_defects"+".tif"); saveAs("png",save_subfolder+"image_regions_defects"+".png"); //close();
 	} //}}}
@@ -4930,282 +4935,138 @@ Before skeletonization:
 	// NEW Defects + Regions //{{{
 	// Adapted to use branch symbols for junction-defects
 	
-	if(regions_defects_new){
-		
-		rdn_colours = newArray("red","green","blue");
+	if(regions_defects_new||figure_4){
 		
 		
-		//selectImage(image003); // original-smoothed.
-		//run("Duplicate...", "title=grey");
-		//run("Multiply...", "value=0.14");
+		newImage("pos_def", "RGB black", w, h, 1);
+		run("Duplicate...", "title=neg_def");
+		run("Duplicate...", "title=pos_def_edge");
+		run("Duplicate...", "title=neg_def_edge");
 		
-		//GREEN
-		selectImage(image004); // original-smoothed.
-		run("Duplicate...", "title=green");
-		changeValues(0,255,0);
+		// Marking Defects
+		t1p = 0xfffc00; // T Positive
+		j3p = 0xffd162; // J-3 Positive
+		j4p = 0xffb405; // J-4 Positive
+		j5p = 0xffa082; // J-5 Positive
 		
-		//RED: Positive Lines
-		selectImage(image_positive_lines);
-		run("Duplicate...", "title=red");
-		run("Multiply...", "value=1");
+		t1n = 0x00ebff; // T Negative
+		j3n = 0x0038a0; // J-3 Negative
+		j4n = 0x1e7800; // J-3 Negative
+		j5n = 0x5e16ff; // J-3 Negative
+		jn_scale = 1.5*jn_radius;
 		
-		// BLUE: Negative Lines
-		selectImage(image_negative_lines);
-		run("Duplicate...", "title=blue");
-		run("Multiply...", "value=0.2");
+		for(i=0; i<defects_array.length; i++){
+			angle = acos(defects_orientations[i]);
+			values = defect_coder(defects_array[i],0,0,0,0,"dec");
+			phase = values[0]; connect = values[1]; x = values[2]; y = values[3];
+			if(phase==0 && connect==1){
+					if(edgeDistance(w,h,x,y)<edge_limit) {selectImage("pos_def_edge");} else {selectImage("pos_def");}
+					makeOval(x-jn_radius, y-jn_radius, jn_radius*2, jn_radius*2); changeValues(0,0,t1p);
+			}
+			if(phase==1 && connect==1){
+					if(edgeDistance(w,h,x,y)<edge_limit) {selectImage("neg_def_edge");} else {selectImage("neg_def");}
+					makeOval(x-jn_radius, y-jn_radius, jn_radius*2, jn_radius*2); changeValues(0,255,t1n);
+			}
+				
+			// JUNCTIONS: Positive
+			// J-3: TREFOIL
+			if(phase==0 && connect==3){ 
+					if(edgeDistance(w,h,x,y)<edge_limit) {selectImage("pos_def_edge");} else {selectImage("pos_def");}
+					selectionCombo(Trefoil_x,Trefoil_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j3p); run("Select None");
+			}
+			// J-4: PLUS
+			if(phase==0 && connect==4){
+					if(edgeDistance(w,h,x,y)<edge_limit) {selectImage("pos_def_edge");} else {selectImage("pos_def");}
+					selectionCombo(Plus_x,Plus_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j4p); run("Select None");
+			}
+			// J-5+: STAR
+			if(phase==0 && connect>=5){
+					if(edgeDistance(w,h,x,y)<edge_limit) {selectImage("pos_def_edge");} else {selectImage("pos_def");}
+					selectionCombo(Star_x,Star_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j5p); run("Select None");
+			}
+			
+			// JUNCTIONS: Negative
+			// J-3: TREFOIL
+			if(phase==1 && connect==3){
+					if(edgeDistance(w,h,x,y)<edge_limit) {selectImage("neg_def_edge");} else {selectImage("neg_def");}
+					selectionCombo(Trefoil_x,Trefoil_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j3n); run("Select None");
+			}
+			// J-4: PLUS
+			if(phase==1 && connect==4){ 
+					if(edgeDistance(w,h,x,y)<edge_limit) {selectImage("neg_def_edge");} else {selectImage("neg_def");}
+					selectionCombo(Plus_x,Plus_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j4n); run("Select None");
+			}
+			// J-5+: STAR
+			if(phase==1 && connect>=5){
+					if(edgeDistance(w,h,x,y)<edge_limit) {selectImage("neg_def_edge");} else {selectImage("neg_def");}
+					selectionCombo(Star_x,Star_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j5n); run("Select None");
+			}
+			
+			
+			
+		}
+		run("Select None");
+		
+		
 		
 		//MAGENTA: Positive Dots
 		selectImage(image_positive_dots);  //**
 		run("Duplicate...", "title=magenta");
-		run("Multiply...", "value=1");
+		run("Multiply...", "value=0.7");
+		if (figure_4){
+			if (regions_defects_new) {run("Duplicate...", "title=magentaB");}
+			else {rename("magentaB");}
+		}
 		
 		//CYAN: Negative Dots
 		selectImage(image_negative_dots); //**
 		run("Duplicate...", "title=cyan");
 		run("Multiply...", "value=0.7");
-		
-		
-		
-		// Marking Defects
-		t1p = newArray(255,252,0); // T Positive
-		j3p = newArray(255,209,98); // J-3 Positive
-		j4p = newArray(255,180,5); // J-3 Positive
-		j5p = newArray(255,160,130); // J-3 Positive
-		
-		t1n = newArray(0,235,255); // T Negative
-		j3n = newArray(0,56,160); // J-3 Negative
-		j4n = newArray(30,120,0); // J-3 Negative
-		j5n = newArray(94,22,255); // J-3 Negative
-		jn_scale = 1.5*jn_radius;
-		
-		for(i=0; i<defects_array.length; i++){
-			angle = acos(defects_orientations[i]);
-			values = defect_coder(defects_array[i],0,0,0,0,"dec");
-			phase = values[0]; connect = values[1]; x = values[2]; y = values[3];
-			if(phase==0 && connect==1){
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn_colours[rdn]);
-					makeOval(x-jn_radius, y-jn_radius, jn_radius*2, jn_radius*2); changeValues(0,0,t1p[rdn]);
-					//if(edgeDistance(w,h,x,y)<edge_limit){ changeValues(150,150,50); }
-				}
-			}
-			if(phase==1 && connect==1){
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn_colours[rdn]);
-					makeOval(x-jn_radius, y-jn_radius, jn_radius*2, jn_radius*2); changeValues(0,255,t1n[rdn]);
-					//if(edgeDistance(w,h,x,y)<edge_limit){ changeValues(125,125,40); }
-				}
-			}
-				
-			// JUNCTIONS: Positive
-			// J-3: TREFOIL
-			if(phase==0 && connect==3){ 
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn_colours[rdn]);
-					selectionCombo(Trefoil_x,Trefoil_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j3p[rdn]); run("Select None");
-				}
-			}
-			// J-4: PLUS
-			if(phase==0 && connect==4){
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn_colours[rdn]);
-					selectionCombo(Plus_x,Plus_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j4p[rdn]); run("Select None");
-				}
-			}
-			// J-5+: STAR
-			if(phase==0 && connect>=5){
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn_colours[rdn]);
-					selectionCombo(Star_x,Star_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j5p[rdn]); run("Select None");
-				}
-			}
-			
-			// JUNCTIONS: Negative
-			// J-3: TREFOIL
-			if(phase==1 && connect==3){
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn_colours[rdn]);
-					selectionCombo(Trefoil_x,Trefoil_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j3n[rdn]); run("Select None");
-				}
-			}
-			// J-4: PLUS
-			if(phase==1 && connect==4){ 
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn_colours[rdn]);
-					selectionCombo(Plus_x,Plus_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j4n[rdn]); run("Select None");
-				}
-			}
-			// J-5+: STAR
-			if(phase==1 && connect>=5){
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn_colours[rdn]);
-					selectionCombo(Star_x,Star_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j5n[rdn]); run("Select None");
-				}
-			}
-			
-			
-			
+		if (figure_4){
+			if (regions_defects_new) {run("Duplicate...", "title=cyanB");}
+			else {rename("cyanB");}
 		}
-		run("Select None");
 		
-		
-		
-		
-		run("Merge Channels...", "c1=red c2=green c3=blue c5=cyan c6=magenta create"); // c4=grey
-		rename("regions_defects_NEW");
-		image_regions_defects_NEW = getImageID();
-		selectImage(image_regions_defects_NEW); saveAs("TIF",save_subfolder+"image_regions_defects_NEW"+".tif"); saveAs("png",save_subfolder+"image_regions_defects_NEW"+".png"); //close();
-	}//}}}
-	
-	
-	// NEW Defects + Regions //{{{
-	// Adapted to use branch symbols for junction-defects
-	
-	if(figure_4){
-		
-		rdn_colours = newArray("red","green","blue");
-		rdn2_colours = newArray("redB","greenB","blueB");
-		
-		selectImage(image003); // original-smoothed.
-		run("Duplicate...", "title=grey");
-		run("Multiply...", "value=0.5");
-		run("Duplicate...", "title=greyB");
-		
-		//GREEN
-		selectImage(image004); // original-smoothed.
-		run("Duplicate...", "title=green");
-		changeValues(0,255,0);
-		run("Duplicate...", "title=greenB");
-		
+	if (regions_defects_new) {
 		//RED: Positive Lines
 		selectImage(image_positive_lines);
 		run("Duplicate...", "title=red");
-		run("Multiply...", "value=1");
-		changeValues(0,255,0);
-		run("Duplicate...", "title=redB");
+		run("Multiply...", "value=0.7");
 		
 		// BLUE: Negative Lines
 		selectImage(image_negative_lines);
 		run("Duplicate...", "title=blue");
 		run("Multiply...", "value=0.2");
-		changeValues(0,255,0);
-		run("Duplicate...", "title=blueB");
-		// The following is to prevent deletion of blueB from somewhere
-		run("Duplicate...", "title=blueB2");
 		
-		//MAGENTA: Positive Dots
-		selectImage(image_positive_dots);  //**
-		run("Duplicate...", "title=magenta");
-		run("Multiply...", "value=1");
+		run("Merge Channels...", "c1=red c3=blue c5=cyan c6=magenta create");
+		selectImage("Composite");rename("regions_defects_NEW"); //select "Composite" image. if not doing so, the lower versions of ImageJ will mistakenly select another image
+		run("Add Image...", "image=pos_def x=0 y=0 opacity=100 zero");
+		run("Add Image...", "image=neg_def x=0 y=0 opacity=100 zero");
+		run("Add Image...", "image=pos_def_edge x=0 y=0 opacity=40 zero");
+		run("Add Image...", "image=neg_def_edge x=0 y=0 opacity=40 zero");
+		image_regions_defects_NEW = getImageID();
+		selectImage(image_regions_defects_NEW); saveAs("TIF",save_subfolder+"image_regions_defects_NEW"+".tif"); saveAs("png",save_subfolder+"image_regions_defects_NEW"+".png"); //close();
+	}
+	if (figure_4){
+		selectImage(image003); // original-smoothed.
+		run("Duplicate...", "title=grey");
+		run("Duplicate...", "title=greyB");
 		
-		//CYAN: Negative Dots
-		//selectImage(image_negative_dots); //**
-		//run("Duplicate...", "title=cyanB");
-		//run("Multiply...", "value=0.7");
-		
-		
-		
-		// Marking Defects
-		t1p = newArray(255,252,0); // T Positive
-		j3p = newArray(255,209,98); // J-3 Positive
-		j4p = newArray(255,180,5); // J-3 Positive
-		j5p = newArray(255,160,130); // J-3 Positive
-		
-		t1n = newArray(0,235,255); // T Negative
-		j3n = newArray(0,56,160); // J-3 Negative
-		j4n = newArray(30,120,0); // J-3 Negative
-		j5n = newArray(94,22,255); // J-3 Negative
-		jn_scale = 1.5*jn_radius;
-		
-		for(i=0; i<defects_array.length; i++){
-			angle = acos(defects_orientations[i]);
-			values = defect_coder(defects_array[i],0,0,0,0,"dec");
-			phase = values[0]; connect = values[1]; x = values[2]; y = values[3];
-			if(phase==0 && connect==1){
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn_colours[rdn]);
-					makeOval(x-jn_radius, y-jn_radius, jn_radius*2, jn_radius*2); changeValues(0,0,t1p[rdn]);
-					//if(edgeDistance(w,h,x,y)<edge_limit){ changeValues(150,150,50); }
-				}
-			}
-			if(phase==1 && connect==1){
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn2_colours[rdn]);
-					makeOval(x-jn_radius, y-jn_radius, jn_radius*2, jn_radius*2); changeValues(0,255,t1n[rdn]);
-					//if(edgeDistance(w,h,x,y)<edge_limit){ changeValues(125,125,40); }
-				}
-			}
-				
-			// JUNCTIONS: Positive
-			// J-3: TREFOIL
-			if(phase==0 && connect==3){ 
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn_colours[rdn]);
-					selectionCombo(Trefoil_x,Trefoil_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j3p[rdn]); run("Select None");
-				}
-			}
-			// J-4: PLUS
-			if(phase==0 && connect==4){
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn_colours[rdn]);
-					selectionCombo(Plus_x,Plus_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j4p[rdn]); run("Select None");
-				}
-			}
-			// J-5+: STAR
-			if(phase==0 && connect>=5){
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn_colours[rdn]);
-					selectionCombo(Star_x,Star_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j5p[rdn]); run("Select None");
-				}
-			}
-			
-			// JUNCTIONS: Negative
-			// J-3: TREFOIL
-			if(phase==1 && connect==3){
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn2_colours[rdn]);
-					selectionCombo(Trefoil_x,Trefoil_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j3n[rdn]); run("Select None");
-				}
-			}
-			// J-4: PLUS
-			if(phase==1 && connect==4){ 
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn2_colours[rdn]);
-					selectionCombo(Plus_x,Plus_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j4n[rdn]); run("Select None");
-				}
-			}
-			// J-5+: STAR
-			if(phase==1 && connect>=5){
-				for(rdn=0; rdn<3; rdn++){
-					selectImage(rdn2_colours[rdn]);
-					selectionCombo(Star_x,Star_y,angle,0,jn_scale,x,y,1); changeValues(0,255,j5n[rdn]); run("Select None");
-				}
-			}
-			
-			
-			
-		}
-		run("Select None");
-		
-		
-		
-		
-		run("Merge Channels...", "c1=red c2=green c3=blue c4=grey c6=magenta create"); // c4=grey
-		rename("figure_4_b");
+		run("Merge Channels...", "c4=grey c6=magentaB create");
+		selectImage("Composite");rename("figure_4_b");
+		run("Add Image...", "image=pos_def x=0 y=0 opacity=100 zero");
+		run("Add Image...", "image=pos_def_edge x=0 y=0 opacity=40 zero");
 		image_figure_4_b = getImageID();
 		selectImage(image_figure_4_b); saveAs("TIF",save_subfolder+"image_figure_4_b"+".tif"); saveAs("png",save_subfolder+"image_figure_4_b"+".png"); //close();
 		
-		//CYAN: Negative Dots
-		selectImage(image_negative_dots); //**
-		run("Duplicate...", "title=nayc");
-		run("Multiply...", "value=0.7");
-		
-		run("Merge Channels...", "c1=redB c2=greenB c3=blueB c4=greyB c5=nayc create"); // c4=grey
-		rename("figure_4_c");
+		run("Merge Channels...", "c4=greyB c5=cyanB create");
+		selectImage("Composite");rename("figure_4_c");
+		run("Add Image...", "image=neg_def x=0 y=0 opacity=100 zero");
+		run("Add Image...", "image=neg_def_edge x=0 y=0 opacity=40 zero");
 		image_figure_4_c = getImageID();
 		selectImage(image_figure_4_c); saveAs("TIF",save_subfolder+"image_figure_4_c"+".tif"); saveAs("png",save_subfolder+"image_figure_4_c"+".png"); //close();
+	}
 	}//}}}
-	
 	
 	// REGIONS COMPOSITES
 	// Blocky //{{{
@@ -5260,21 +5121,13 @@ Before skeletonization:
 		imageCalculator("Add create",positive_j_skeleton,negative_j_skeleton);
 		unusual_temp = getImageID(); Ch2 = getTitle();
 		changeValues(1,1,254); // Terminal Points
+		changeValues(100,100,190);
 		changeValues(11,11,75); // 
 		changeValues(12,12,50);
 		for(i=0; i<defects_array.length; i++){
 			values = defect_coder(defects_array[i],0,0,0,0,"dec");
 			x = values[2]; y = values[3];
-			if(values[1]<3){
-				if(getPixel(x,y)!=254){ // this is contigent on above definitions
-					//MARK
-					makeOval(x-jn_radius, y-jn_radius, jn_radius*2, jn_radius*2);
-					//shiftValues(0,0,80,1); // v029
-					changeValues(0,0,80); // v030
-					setPixel(x,y,255);
-				}
-			}
-			else if(values[1]>3){
+			if(values[1]>3){
 				//MARK
 				makeOval(x-jn_radius, y-jn_radius, jn_radius*2, jn_radius*2);
 				//shiftValues(0,0,120,1); // v029
@@ -5286,7 +5139,7 @@ Before skeletonization:
 		selectImage(image_negative_skeleton); Ch3 = getTitle();
 		selectImage(image_positive_skeleton); Ch1 = getTitle();
 		run("Merge Channels...", "c1=&Ch1 c2=&Ch2 c3=&Ch3 create keep");
-		image_validation_defects = getImageID();
+		selectImage("Composite");image_validation_defects = getImageID();
 		selectImage(image_validation_defects); saveAs("png",save_subfolder+"image_validation_defects"+".png"); //close();
 		selectImage(unusual_temp); close();
 	} //}}}
