@@ -320,10 +320,12 @@ function LUT_index_mod(index,r,g,b){
 // For estimation of line widths
 
 // Array Summing Function
-function arraySumP3(ArrayA,ArrayB,ArrayC){
+// For ImageJ core version >1.52, comparison between an array and a number is not allowed
+// so I added one more argument here to specify number of arrays
+function arraySumP3(numOfArrays,ArrayA,ArrayB,ArrayC){
 	sum = 0;
-	if(ArrayB==1){ for(n=0; n<ArrayA.length; n++){ sum += ArrayA[n];} }
-	else if(ArrayC==1){ for(n=0; n<ArrayA.length; n++){ sum += ArrayA[n]*ArrayB[n];} }
+	if(numOfArrays==1){ for(n=0; n<ArrayA.length; n++){ sum += ArrayA[n];} }
+	else if(numOfArrays==2){ for(n=0; n<ArrayA.length; n++){ sum += ArrayA[n]*ArrayB[n];} }
 	else { for(n=0; n<ArrayA.length; n++){ sum += ArrayA[n]*ArrayB[n]*ArrayC[n];} }
 	return sum;
 }
@@ -353,21 +355,21 @@ function particleWLSQ(Xi,Yi,Weighting_Method,iterations){
 		}
 	}
 	else { Array.fill(Wi_not_norm,1);}
-	Wi_Normalization = arraySumP3(Wi_not_norm,1,1);
+	Wi_Normalization = arraySumP3(1,Wi_not_norm,1,1);
 	for(n=0; n<N; n++){ Wi[n] = Wi_not_norm[n] / Wi_Normalization; }
 	Wi_method = Wi_not_norm;
 	
 	// Calculate All Sums
-	S_Yi = arraySumP3(Yi,1,1);
-	S_Xi = arraySumP3(Xi,1,1);
-	S_Wi = arraySumP3(Wi,1,1);
-	S_XiXi = arraySumP3(Xi,Xi,1);
-	S_YiXi = arraySumP3(Yi,Xi,1);
-	S_WiWi = arraySumP3(Wi,Wi,1);
-	S_WiXi = arraySumP3(Wi,Xi,1);
-	S_WiYi = arraySumP3(Wi,Yi,1);
-	S_WiXiXi = arraySumP3(Wi,Xi,Xi);
-	S_WiXiYi = arraySumP3(Wi,Xi,Yi);
+	S_Yi = arraySumP3(1,Yi,1,1);
+	S_Xi = arraySumP3(1,Xi,1,1);
+	S_Wi = arraySumP3(1,Wi,1,1);
+	S_XiXi = arraySumP3(2,Xi,Xi,1);
+	S_YiXi = arraySumP3(2,Yi,Xi,1);
+	S_WiWi = arraySumP3(2,Wi,Wi,1);
+	S_WiXi = arraySumP3(2,Wi,Xi,1);
+	S_WiYi = arraySumP3(2,Wi,Yi,1);
+	S_WiXiXi = arraySumP3(3,Wi,Xi,Xi);
+	S_WiXiYi = arraySumP3(3,Wi,Xi,Yi);
 	
 	// Form of Y = aX+b
 	Alpha = ( S_YiXi - (S_Yi*S_Xi/N)) / (S_XiXi - (S_Xi*S_Xi/N));
@@ -384,16 +386,16 @@ function particleWLSQ(Xi,Yi,Weighting_Method,iterations){
 			Ei[n] = abs(Y_fit[n] - Yi[n]);
 			Wi_not_norm[n] = 1/Ei[n]*Wi_method[n];
 		}
-		Wi_Normalization = arraySumP3(Wi_not_norm,1,1);
+		Wi_Normalization = arraySumP3(1,Wi_not_norm,1,1);
 		for(n=0; n<N; n++){ Wi[n] = Wi_not_norm[n] / Wi_Normalization; }
 		
 		// Re-Calculate Wi-Sums
-		S_Wi = arraySumP3(Wi,1,1);
-		S_WiWi = arraySumP3(Wi,Wi,1);
-		S_WiXi = arraySumP3(Wi,Xi,1);
-		S_WiYi = arraySumP3(Wi,Yi,1);
-		S_WiXiXi = arraySumP3(Wi,Xi,Xi);
-		S_WiXiYi = arraySumP3(Wi,Xi,Yi);
+		S_Wi = arraySumP3(1,Wi,1,1);
+		S_WiWi = arraySumP3(2,Wi,Wi,1);
+		S_WiXi = arraySumP3(2,Wi,Xi,1);
+		S_WiYi = arraySumP3(2,Wi,Yi,1);
+		S_WiXiXi = arraySumP3(3,Wi,Xi,Xi);
+		S_WiXiYi = arraySumP3(3,Wi,Xi,Yi);
 		
 		// Form of Y = aX+b
 		BetaWW = (S_WiXiXi*S_WiYi - (S_WiXi*S_WiXiYi))/(S_Wi*S_WiXiXi - S_WiXi*S_WiXi);
@@ -2106,7 +2108,8 @@ for(img_i=0; img_i<image_list.length; img_i++){
 	
 	// IMAGE VIABILITY  //{{{
 		viable_image = true; 
-		if(bitDepth() != 8){viable_image = false;} else { run("8-bit"); } // Fix to turn "8-bit Color" images to plain "8-bit"
+		if(bitDepth() != 8){viable_image = false;}
+ else { run("8-bit"); } // Fix to turn "8-bit Color" images to plain "8-bit"
 		//else if(true){viable_image = false;}  // Other reasons...
 	// END OF IMAGE VIABILITY  //}}}
 	
