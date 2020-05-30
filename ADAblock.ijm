@@ -4092,6 +4092,7 @@ Before skeletonization:
 				if(slice==1){setPixel(x,y,cos(angle));}
 				if(slice==2){setPixel(x,y,angle/abs(angle));}
 			}
+			showStatus("Adding slice #"+slice+1+"/3");
 			
 			pid = pid_max;
 			while(pid>0){
@@ -4118,8 +4119,8 @@ Before skeletonization:
 					}
 				}
 				pid--;
+				showProgress(pid_max-pid,pid_max);
 			}
-		showProgress(slice,3);
 		} // end of slices
 		
 		
@@ -4186,9 +4187,15 @@ Before skeletonization:
 		changeValues(-10,-10,black);
 		LUT_angles(true);
 		
+		changeValues(255,255,0); // where the value should be zero, 255 pops up!
+		//For ImageJ core version>1.52d, the program will not automatically set the minimum and maximum pixel values after `changeValues` is called
+		//unless you manually open the "Brightness/Contrast" window
+		//In addition, there are pixels whose values are NaN, which should also be removed
+		//In this regard, the command line below can solve the issue perfectly
+		setMinAndMax(black, PI);
+		
 		selectImage("DomainMap"); saveAs("TIFF",save_subfolder+"DomainMap.tif"); 
 		//saveAs("TIFF",save_location+save_title + "_DomainMap" + ".tif");
-		changeValues(255,255,0); // where the value should be zero, 255 pops up!
 		saveAs("PNG",save_subfolder+"DomainMap.png"); close();
 		// ADD ANGLE SCALE BA//{{{
 			//Original: ADD_OPaS_Angle_Scale_Bar_01_20140516.ijm
