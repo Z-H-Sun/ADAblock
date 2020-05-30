@@ -3948,22 +3948,23 @@ Before skeletonization:
 	// Simple Linear Regression (without intercept)
 	// only include correlation values > 0... b/c of log. 
 	opa_CL_range = minOf(opa_Correlation_smoothed_b.length,round(correlation_length * 2)); // value of correlation fit strongly dependent on this. 
-	opa_x_bar = 0; opa_xx_bar = 0; opa_xy_bar = 0; opa_yy_bar = 0; opa_bar_count = 0;
+	opa_x_bar = 0; opa_y_bar = 0; opa_xx_bar = 0; opa_xy_bar = 0; opa_yy_bar = 0; opa_bar_count = 0;
 	for(m = 0; m<opa_CL_range; m++){
 		yexp = opa_Correlation_smoothed_b[m];
 		if(yexp>0){
 			ylog = log(yexp); // note "log()" is actually natural log!
 			opa_x_bar += m;
-			opa_xx_bar = m*m;
-			opa_xy_bar = m * ylog;
-			opa_yy_bar = ylog * ylog;
+			opa_xx_bar += m*m;
+			opa_xy_bar += m * ylog;
+			opa_y_bar += ylog;
+			opa_yy_bar += ylog * ylog;
 			opa_bar_count++;
 		}
 	}
+	opa_x_bar /= opa_bar_count; opa_y_bar /= opa_bar_count; opa_xx_bar /= opa_bar_count; opa_xy_bar /= opa_bar_count; opa_yy_bar /= opa_bar_count;
 	opa_bar_slope = opa_xy_bar / opa_xx_bar;
 	correlation_length_linear = -1 / opa_bar_slope;
-	opa_bar_r_smaple_c_coeff = opa_xy_bar / sqrt( opa_xx_bar * opa_yy_bar );
-	opa_bar_R_squared = opa_bar_r_smaple_c_coeff*opa_bar_r_smaple_c_coeff*1.0;
+	opa_bar_R_squared = pow(opa_xy_bar-opa_x_bar*opa_y_bar,2) / (opa_xx_bar-pow(opa_x_bar,2)) / (opa_yy_bar-pow(opa_y_bar,2));
 	// plot for fit:
 	opa_Correlation_fit = newArray(opa_Correlation_smoothed_a.length);
 	for(m=0; m<opa_Correlation_fit.length; m++){
