@@ -22,14 +22,25 @@
 
 // SETTINGS  /{{{
 	program_name = "ADAblock";
-	program_version = "v1.03"; prog_version = 1.03;
-	modification_date = "2020.05.28";
+	program_version = "v1.04"; prog_version = 1.04;
+	modification_date = "2020.05.29";
 	d_mode = 1; //(diagnostc mode)
 	requires("1.49o"); // Requires Latest Version of ImageJ
 	// http://fiji.sc/wiki/index.php/Auto_Threshold
 	
 	savestages = 0; /** Saves more images if set to 1 **/
 
+// Default options
+default_options_single_multi = "Multi";
+default_batchmode_choice = true;
+default_options_resolution = "Specified";
+default_value_resolution = 2; // nm per pixel;
+default_options_resolution_units = "nm";
+default_domain_mapping = -1; // true/false, or -1 meaning automatic (true unless batch mode on)
+default_defect_simple = -1; // same as above
+default_defect_legend = -1; // same as above
+default_defect_separated = -1; // same as above
+default_defect_unusual = true; // same as above
 // END OF SETTINGS  //}}}	
 
 
@@ -1722,9 +1733,9 @@ function selectionCombo(xPoints,yPoints,angle,degrees_true,scale_factor,x_offset
 		options_single_multi = newArray("Single","Multi");
 		Dialog.create("Single or Multi Mode");
 			Dialog.addMessage("Multi Mode will analyze a folder of TIF or PNG images. \n Single mode will only process one image. \n The image must already be open & active.");
-			Dialog.addChoice("Choose:",options_single_multi);
+			Dialog.addChoice("Choose:",options_single_multi, default_options_single_multi);
 			//Dialog.addMessage("Batch Mode. (Hide Images)");
-			Dialog.addCheckbox("Batch Mode", true);
+			Dialog.addCheckbox("Batch Mode", default_batchmode_choice);
 			Dialog.show();
 		single_or_multi = Dialog.getChoice();
 		batchmode_choice = Dialog.getCheckbox(); //}}}
@@ -1733,12 +1744,11 @@ function selectionCombo(xPoints,yPoints,angle,degrees_true,scale_factor,x_offset
 	// Question: Resolution //{{{
   		options_resolution = newArray("NINT_s4800","Embedded","Specified");
   		options_resolution_units = newArray("nm",getInfo("micrometer.abbreviation"));
-  		default_value_resolution = 0.500; // nm per pixel;
   		Dialog.create("Determine Image Resolution");
 			Dialog.addMessage("How will the image resolution be determined? \nIf 'Specified' is selected, enter a value and \nchoose a unit.");
-			Dialog.addChoice("Choose Method:",options_resolution);
+			Dialog.addChoice("Choose Method:",options_resolution,default_options_resolution);
 			Dialog.addNumber("1 pixel equals:",default_value_resolution,4,9,"units");
-			Dialog.addChoice("Unit:",options_resolution_units);
+			Dialog.addChoice("Unit:",options_resolution_units,default_options_resolution_units);
 			Dialog.show();
 		resolution_method = Dialog.getChoice();
 		resolution_specified = Dialog.getNumber();
@@ -1807,12 +1817,16 @@ function selectionCombo(xPoints,yPoints,angle,degrees_true,scale_factor,x_offset
 	// Question: Aditional Analyses //{{{
 		Dialog.create("Choose Additional Analyses");
 			Dialog.addMessage("Choose whether the program will \nperform any addtional analyses.\nNote that this will increase run time.");
-			Dialog.addCheckbox("Orientational Domain Map", true);
-			Dialog.addCheckbox("Defect features (simple style)", true);
-			Dialog.addCheckbox("Defect features (with legend)", true);
-			Dialog.addCheckbox("Defect features (separated)", true);
-			Dialog.addCheckbox("Defect features (check unusual)", true);
-			
+			if (default_domain_mapping <0) {default_domain_mapping=!batchmode_choice;}
+			if (default_defect_simple <0) {default_defect_simple=!batchmode_choice;}
+			if (default_defect_legend <0) {default_defect_legend=!batchmode_choice;}
+			if (default_defect_separated <0) {default_defect_separated=!batchmode_choice;}
+			if (default_defect_unusual <0) {default_defect_unusual=!batchmode_choice;}
+			Dialog.addCheckbox("Orientational Domain Map", default_domain_mapping);
+			Dialog.addCheckbox("Defect features (simple style)", default_defect_simple);
+			Dialog.addCheckbox("Defect features (with legend)", default_defect_legend);
+			Dialog.addCheckbox("Defect features (separated)", default_defect_separated);
+			Dialog.addCheckbox("Defect features (check unusual)", default_defect_unusual);
 			Dialog.show();
 			domain_mapping = Dialog.getCheckbox();
 			regions_defects = Dialog.getCheckbox();
