@@ -8,7 +8,9 @@
 	 *  
 	 *   ImageJ Macro Code Implementation of Defect Analysis Algorithm
 	 *   Version: 0.50i  Date: 2015.01.30  Author: Jeffrey N. Murphy
-	 *   Updated versions available at: https://github.com/MurphysLab/ADAblock
+	 *   Updated versions available at: https://github.com/MurphysLab/ADAblock
+	 *   Version: 1.05   Date: 2020.06.18  Amended by Z. Sun
+	 *   Updates available at: https://github.com/Z-H-Sun/ADAblock
 	 *   
 	 * The algorithm is described in the following paper: 
 	 *   
@@ -22,8 +24,8 @@
 
 // SETTINGS  /{{{
 	program_name = "ADAblock";
-	program_version = "v1.04"; prog_version = 1.04;
-	modification_date = "2020.05.29";
+	program_version = "v1.05"; prog_version = 1.05;
+	modification_date = "2020.06.18";
 	d_mode = 1; //(diagnostc mode)
 	requires("1.49o"); // Requires Latest Version of ImageJ
 	// http://fiji.sc/wiki/index.php/Auto_Threshold
@@ -1973,7 +1975,8 @@ for(img_i=0; img_i<image_list.length; img_i++){
 	// END OF IMAGE IMPORT  //}}}
 	
 	// IMAGE VIABILITY  //{{{
-		viable_image = true; 
+		viable_image = true;
+ 
 		//if(bitDepth() != 8){viable_image = false;}
 		//There is no need to limit to 8-bit images
 		//The `8-bit` macro will do the conversion anyway
@@ -4870,8 +4873,8 @@ Before skeletonization:
 	
 	// CALCULATE AVERAGES //{{{
 	// Averages are weighted by length
-	sigma_length_total = 0; length_total = 0;
-	avg_length = 0;
+	sigma_length_total = 0; sigma2_length_total = 0; length_total = 0;
+	avg_length = 0; avg2_length = 0;
 	for(n=0; n<nResults; n++){
 		sigma = getResult("EdgeToSkel.sigma",n);
 		sigma2 = getResult("EdgeToEdge.sigma",n);
