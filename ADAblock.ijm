@@ -4073,8 +4073,9 @@ Before skeletonization:
 	}
 	
 	
-	print("CORRELATION LENGTH (stepwise|line-fit|R2): "+ correlation_length +"," + correlation_length_linear + "," + opa_bar_R_squared);
-	outputTD("correlation_length",correlation_length); outputTD("correlation_length_linear",correlation_length_linear); outputTD("opa_bar_R_squared",opa_bar_R_squared);
+	correlation_length *= nm_per_pixel; correlation_length_linear *= nm_per_pixel;
+	print("CORRELATION LENGTH (nm, stepwise|line-fit|R2): "+ correlation_length +"," + correlation_length_linear + "," + opa_bar_R_squared);
+	outputTD("correlation_length_nm",correlation_length); outputTD("correlation_length_linear_nm",correlation_length_linear); outputTD("opa_bar_R_squared",opa_bar_R_squared);
 	//print("CORRELATION LENGTH (line-fit), px: "+ correlation_length_linear);
 	//print("R-squared for line-fit: " + opa_bar_R_squared);
 	
@@ -5299,10 +5300,13 @@ Before skeletonization:
 	total_area_nm = total_area_px*nm_per_pixel*nm_per_pixel; outputTD("Total_Area_nm",total_area_nm); outputTD("Total_Area_um",total_area_nm/1000000);
 	defect_pair_density_nm = total_defects / 2 / total_area_nm; outputTD("Defect_Density_nm",defect_pair_density_nm);
 	defect_pair_density_um = defect_pair_density_nm * 1000000; outputTD("Defect_Density_um",defect_pair_density_um);
+	defect_pair_density_um_2 = (total_defects-2*p_j4_count-p_jx-2*n_j4_count-n_jx)/ 2 / total_area_nm * 1000000;
+	outputTD("Defect_Density_w/o_unusual_um",defect_pair_density_um_2);
 	
 	print("\n"+"Total Pos. Defects: "+p_total_defects+"\n"+"Total Neg. Defects: "+n_total_defects+"\n"+"Total Defects: "+total_defects);
 	print("\n"+"Total Area (px): "+total_area_px+"\n"+"Total Area (nm²): "+total_area_nm);
 	print("\n"+"Defect Density (defects-pairs/nm²): "+defect_pair_density_nm+"\n"+"Defect Density (defects-pairs/µm²): "+defect_pair_density_um); 
+	print("Defect Density (defects-pairs w/o unusual ones/µm²): "+defect_pair_density_um_2);
 	
 	//END of F.C.&L.//}}}
 	
