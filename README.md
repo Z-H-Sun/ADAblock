@@ -59,6 +59,10 @@ Here is the list of commits and their corresponding issues/enhancement <a href="
 ![](https://img.shields.io/badge/Enhancement-P4-informational?style=plastic) I have been using Zeiss SEM to capture images, so I added one more option to extract scalebar information for Zeiss SEM in addition to the original NINT one
 * Starting from [Z-H-Sun/ADAblock@73d5f8c](https://github.com/Z-H-Sun/ADAblock/commit/73d5f8c341b3ca70921078bd4c9281187f3fbed0), resolution information can be automatically extracted for Zeiss SEM, but you have to make sure the input image must be 1024x768
 
+![](https://img.shields.io/badge/Bug-P2-yellow?style=plastic) **(I).** The correlation lengths were shown in pixels, but we care more about results in nanometers; **(II).** Very often, the unusual defects (4-way or 5-way junctions) identified by the macro were actually artefacts due to wrongly converted skeleton graph.
+* Starting from [Z-H-Sun/ADAblock@f2e8d4d
+](https://github.com/Z-H-Sun/ADAblock/commit/f2e8d4da94b2208a35f9ac522d3352d9f9670fec), correlation lengths will be shown in nanometers rather than pixels, and defect densities without taking into account unusual defects will be given at the end of the output file in addition to the conventional way of calculation.
+
 ---------------------
 
 \#|Notes
