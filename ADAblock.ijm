@@ -2309,7 +2309,7 @@ for(img_i=0; img_i<image_list.length; img_i++){
 	
 	c = w/2;
 	
-	N_max = N*(sqrt(2)*c+1)+1;
+	N_max = Math.floor(N*(sqrt(2)*c+1))+1;
 	
 	// Data Arrays
 	ArrDist = newArray(N_max);
