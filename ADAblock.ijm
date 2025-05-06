@@ -24,8 +24,8 @@
 
 // SETTINGS  /{{{
 	program_name = "ADAblock";
-	program_version = "v1.05"; prog_version = 1.05;
-	modification_date = "2020.06.18";
+	program_version = "v1.06"; prog_version = 1.06;
+	modification_date = "2025.05.06";
 	d_mode = 1; //(diagnostc mode)
 	requires("1.49o"); // Requires Latest Version of ImageJ
 	// http://fiji.sc/wiki/index.php/Auto_Threshold
@@ -4093,6 +4093,7 @@ Before skeletonization:
 			setResult("Correlation",m,opa_Correlation_temp[m]);
 			setResult("C-Smooth-a",m,opa_Correlation_smoothed_a[m]);
 			setResult("C-Smooth-b",m,opa_Correlation_smoothed_b[m]);
+			setResult("Fit",m,opa_Correlation_fit[m]);
 		}
 		updateResults();
 		selectWindow("Results"); saveAs("Measurements",save_subfolder+opa_save_title + "_CL_" + opa_LT_count + ".xls");
@@ -4130,6 +4131,7 @@ Before skeletonization:
 			setResult("Correlation",m,opa_Correlation_temp[m]);
 			setResult("C-Smooth-a",m,opa_Correlation_smoothed_a[m]);
 			setResult("C-Smooth-b",m,opa_Correlation_smoothed_b[m]);
+			setResult("Fit",m,opa_Correlation_fit[m]);
 		}
 		updateResults();
 		selectWindow("Results"); saveAs("Measurements",save_subfolder+opa_save_title + "_CL_" + opa_LT_count + ".xls");
@@ -4185,13 +4187,17 @@ Before skeletonization:
 		maxPx_d = -10;
 		v1 = 0; v2 = 0; v3 = 0; v4 = 0; v5 = 0; v6 = 0; v7 = 0; v8 = 0;
 		//setBatchMode(true);
+		run("Clear Results");
 		for(slice=0; slice<3; slice++){
 			if(slice>0){run("Add Slice"); changeValues(-10,0,-10);}
 			for(i=0; i<opa_aaa_Orig.length; i++){
 				x = opa_axa_Orig[i];
 				y = opa_aya_Orig[i];
 				angle = opa_aaa_Orig[i];
-				if(slice==0){setPixel(x,y,sin(angle/2));}
+				if(slice==0){setPixel(x,y,sin(angle/2));
+					setResult("X",i,x);
+					setResult("Y",i,y);
+					setResult("Angle",i,angle*180/PI);}
 				if(slice==1){setPixel(x,y,cos(angle));}
 				if(slice==2){setPixel(x,y,angle/abs(angle));}
 			}
@@ -4225,6 +4231,8 @@ Before skeletonization:
 				showProgress(pid_max-pid,pid_max);
 			}
 		} // end of slices
+		updateResults();
+		selectWindow("Results"); saveAs("Measurements",save_subfolder+"angles.xls");
 		
 		
 		w = getWidth();
@@ -5393,14 +5401,4 @@ Before skeletonization:
 
 beep(); showStatus("done"); print("done"); //setBatchMode(false);
 // END  //}}}
-
-
-
-
-
-                                                                                               
-
-
-
-
 
