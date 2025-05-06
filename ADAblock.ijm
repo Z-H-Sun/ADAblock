@@ -4989,10 +4989,10 @@ Before skeletonization:
 	}
 	for(i=0; i<dot_defects.length; i++){
 		values = defect_coder(dot_defects[i],0,0,0,0,"dec");
-		setResult("Phase",i,values[0]);
-		setResult("Connectivity",i,values[1]);
-		setResult("X",i,values[2]);
-		setResult("Y",i,values[3]);
+		setResult("Phase",i+defects_array.length,values[0]);
+		setResult("Connectivity",i+defects_array.length,values[1]);
+		setResult("X",i+defects_array.length,values[2]);
+		setResult("Y",i+defects_array.length,values[3]);
 	}
 	updateResults();
 	
