@@ -5147,33 +5147,33 @@ Before skeletonization:
 		run("Duplicate...", "title=blue");
 		run("Multiply...", "value=0.2");
 		
-		run("Merge Channels...", "c1=red c3=blue c5=cyan c6=magenta create");
-		selectImage("Composite");rename("regions_defects_NEW"); //select "Composite" image. if not doing so, the lower versions of ImageJ will mistakenly select another image
+		run("Merge Channels...", "c1=red c3=blue c5=cyan c6=magenta");
+		selectImage("RGB");rename("regions_defects_NEW"); //select "Composite" image. if not doing so, the lower versions of ImageJ will mistakenly select another image
 		run("Add Image...", "image=pos_def x=0 y=0 opacity=100 zero");
 		run("Add Image...", "image=neg_def x=0 y=0 opacity=100 zero");
 		run("Add Image...", "image=pos_def_edge x=0 y=0 opacity=40 zero");
 		run("Add Image...", "image=neg_def_edge x=0 y=0 opacity=40 zero");
 		image_regions_defects_NEW = getImageID();
-		selectImage(image_regions_defects_NEW); saveAs("TIF",save_subfolder+"image_regions_defects_NEW"+".tif"); saveAs("png",save_subfolder+"image_regions_defects_NEW"+".png"); //close();
+		selectImage(image_regions_defects_NEW); saveAs("png",save_subfolder+"image_regions_defects_NEW.png"); //close();
 	}
 	if (figure_4){
 		selectImage(image003); // original-smoothed.
 		run("Duplicate...", "title=grey");
 		run("Duplicate...", "title=greyB");
 		
-		run("Merge Channels...", "c4=grey c6=magentaB create");
-		selectImage("Composite");rename("figure_4_b");
+		run("Merge Channels...", "c4=grey c6=magentaB");
+		selectImage("RGB");rename("figure_4_b");
 		run("Add Image...", "image=pos_def x=0 y=0 opacity=100 zero");
 		run("Add Image...", "image=pos_def_edge x=0 y=0 opacity=40 zero");
 		image_figure_4_b = getImageID();
-		selectImage(image_figure_4_b); saveAs("TIF",save_subfolder+"image_figure_4_b"+".tif"); saveAs("png",save_subfolder+"image_figure_4_b"+".png"); //close();
+		selectImage(image_figure_4_b); saveAs("png",save_subfolder+"image_figure_4_b.png"); //close();
 		
-		run("Merge Channels...", "c4=greyB c5=cyanB create");
-		selectImage("Composite");rename("figure_4_c");
+		run("Merge Channels...", "c4=greyB c5=cyanB");
+		selectImage("RGB");rename("figure_4_c");
 		run("Add Image...", "image=neg_def x=0 y=0 opacity=100 zero");
 		run("Add Image...", "image=neg_def_edge x=0 y=0 opacity=40 zero");
 		image_figure_4_c = getImageID();
-		selectImage(image_figure_4_c); saveAs("TIF",save_subfolder+"image_figure_4_c"+".tif"); saveAs("png",save_subfolder+"image_figure_4_c"+".png"); //close();
+		selectImage(image_figure_4_c); saveAs("png",save_subfolder+"image_figure_4_c.png"); //close();
 	}
 	}//}}}
 	
